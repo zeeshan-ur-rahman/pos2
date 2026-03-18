@@ -9,12 +9,14 @@ class Sale extends Model
     protected $fillable = [
         'invoice_number',
         'user_id',
+        'customer_id',
         'subtotal',
         'discount_amount',
         'tax_amount',
         'total_amount',
         'amount_received',
         'change_amount',
+        'due_amount',
         'payment_method',
         'status',
         'notes',
@@ -27,11 +29,17 @@ class Sale extends Model
         'total_amount' => 'decimal:2',
         'amount_received' => 'decimal:2',
         'change_amount' => 'decimal:2',
+        'due_amount' => 'decimal:2',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function items()

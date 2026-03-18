@@ -36,6 +36,14 @@ export default function SaleDetail({ sale }) {
                                 <p className="text-xs font-semibold text-gray-400 uppercase">Cashier</p>
                                 <p className="text-sm font-medium text-gray-800 mt-1">{sale.user.name}</p>
                             </div>
+                            {sale.customer && (
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase">Customer</p>
+                                    <Link href={route('customers.show', sale.customer.id)} className="text-sm font-medium text-blue-600 hover:text-blue-800 mt-1 block">
+                                        {sale.customer.name}
+                                    </Link>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-xs font-semibold text-gray-400 uppercase">Payment</p>
                                 <p className="text-sm font-medium text-gray-800 mt-1 capitalize">{sale.payment_method.replace('_', ' ')}</p>

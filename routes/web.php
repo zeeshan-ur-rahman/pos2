@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SaleController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::post('/products/{product}/batches', [BatchController::class, 'store']);
+
+    // Customer Routes
+    Route::resource('customers', CustomerController::class);
+    Route::post('/customers/{customer}/payments', [CustomerController::class, 'recordPayment'])->name('customers.payment');
+    Route::get('/api/customers/search', [CustomerController::class, 'search'])->name('customers.search');
 
     // POS Routes
     Route::get('/pos', [SaleController::class, 'index'])->name('pos.terminal');

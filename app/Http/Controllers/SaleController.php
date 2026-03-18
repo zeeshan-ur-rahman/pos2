@@ -82,7 +82,7 @@ class SaleController extends Controller
 
     public function receipt(Sale $sale)
     {
-        $sale->load('items.product', 'items.batch', 'user');
+        $sale->load('items.product', 'items.batch', 'user', 'customer');
 
         return Inertia::render('POS/Receipt', [
             'sale' => $sale,
@@ -112,7 +112,7 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load('items.product', 'items.batch', 'user');
+        $sale->load('items.product', 'items.batch', 'user', 'customer');
 
         return Inertia::render('POS/SaleDetail', [
             'sale' => $sale,

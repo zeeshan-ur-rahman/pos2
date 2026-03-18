@@ -16,6 +16,10 @@ export default function Terminal() {
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState('');
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [customerResults, setCustomerResults] = useState([]);
+    const [showCustomerSearch, setShowCustomerSearch] = useState(false);
     const searchRef = useRef(null);
     const debounceRef = useRef(null);
 
@@ -128,9 +132,25 @@ export default function Terminal() {
         }
     };
 
+    const searchCustomers = (query) => {
+        if (query.length < 1) { setCustomerResults([]); return; }
+        axios.get(route('customers.search'), { params: { q: query } })
+            .then(res => setCustomerResults(res.data))
+            .catch(() => setCustomerResults([]));
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(() => searchCustomers(customerSearch), 300);
+        return () => clearTimeout(timer);
+    }, [customerSearch]);
+
     const handleCompleteSale = () => {
         if (cart.length === 0) { setError('Cart is empty'); return; }
-        const received = paymentMethod === 'cash' ? parseFloat(amountReceived) : totalAmount;
+        if (paymentMethod === 'credit' && !selectedCustomer) {
+            setError('Please select a customer for credit sale');
+            return;
+        }
+        const received = paymentMethod === 'credit' ? 0 : (paymentMethod === 'cash' ? parseFloat(amountReceived) : totalAmount);
         if (paymentMethod === 'cash' && (!received || received < totalAmount)) {
             setError('Amount received must be at least Rs ' + totalAmount.toFixed(2));
             return;
@@ -146,6 +166,7 @@ export default function Terminal() {
                 discount: getItemDiscount(item),
             })),
             payment_method: paymentMethod,
+            customer_id: selectedCustomer?.id || null,
             discount_amount: orderDiscount,
             amount_received: received,
             notes,
@@ -163,6 +184,8 @@ export default function Terminal() {
         setAmountReceived('');
         setNotes('');
         setError('');
+        setSelectedCustomer(null);
+        setPaymentMethod('cash');
     };
 
     const formatStock = (p) => {
@@ -354,12 +377,59 @@ export default function Terminal() {
                                 </div>
                             </div>
 
+                            {/* Customer Selection */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Customer (Optional)</h3>
+                                {selectedCustomer ? (
+                                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
+                                        <div>
+                                            <p className="text-sm font-medium text-blue-800">{selectedCustomer.name}</p>
+                                            <p className="text-xs text-blue-600">{selectedCustomer.phone || 'No phone'} · Balance: Rs {parseFloat(selectedCustomer.balance).toFixed(2)}</p>
+                                        </div>
+                                        <button onClick={() => { setSelectedCustomer(null); if (paymentMethod === 'credit') setPaymentMethod('cash'); }}
+                                            className="text-blue-400 hover:text-blue-600 ml-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input type="text" value={customerSearch}
+                                            onChange={(e) => { setCustomerSearch(e.target.value); setShowCustomerSearch(true); }}
+                                            onFocus={() => setShowCustomerSearch(true)}
+                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Search customer by name or phone..." />
+                                        {showCustomerSearch && customerResults.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                                {customerResults.map(c => (
+                                                    <button key={c.id} onClick={() => {
+                                                        setSelectedCustomer(c);
+                                                        setCustomerSearch('');
+                                                        setCustomerResults([]);
+                                                        setShowCustomerSearch(false);
+                                                    }}
+                                                        className="w-full px-3 py-2 text-left hover:bg-blue-50 text-sm flex justify-between">
+                                                        <span className="font-medium text-gray-800">{c.name} <span className="text-gray-400 font-normal">{c.phone}</span></span>
+                                                        {parseFloat(c.balance) > 0 && <span className="text-xs text-red-600">Due: Rs {parseFloat(c.balance).toFixed(2)}</span>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                                 <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Payment Method</h3>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[{ value: 'cash', label: 'Cash', icon: '💵' }, { value: 'easypaisa', label: 'Easypaisa', icon: '📱' }, { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' }].map(method => (
-                                        <button key={method.value} onClick={() => setPaymentMethod(method.value)}
-                                            className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${paymentMethod === method.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { value: 'cash', label: 'Cash', icon: '💵' },
+                                        { value: 'easypaisa', label: 'Easypaisa', icon: '📱' },
+                                        { value: 'bank_transfer', label: 'Bank', icon: '🏦' },
+                                        { value: 'credit', label: 'Credit', icon: '📋', needsCustomer: true },
+                                    ].map(method => (
+                                        <button key={method.value}
+                                            onClick={() => { if (method.needsCustomer && !selectedCustomer) { setError('Select a customer first for credit sale'); return; } setPaymentMethod(method.value); }}
+                                            className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${paymentMethod === method.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'} ${method.needsCustomer && !selectedCustomer ? 'opacity-50' : ''}`}>
                                             <span className="mr-1">{method.icon}</span> {method.label}
                                         </button>
                                     ))}

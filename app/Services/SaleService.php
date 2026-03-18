@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Batch;
+use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
@@ -49,18 +51,33 @@ class SaleService
             $discountAmount = $saleData['discount_amount'] ?? 0;
             $taxAmount = $saleData['tax_amount'] ?? 0;
             $totalAmount = $subtotal - $discountAmount + $taxAmount;
+            $paymentMethod = $saleData['payment_method'] ?? 'cash';
+            $customerId = $saleData['customer_id'] ?? null;
+
+            $dueAmount = 0;
             $amountReceived = $saleData['amount_received'] ?? $totalAmount;
+            $changeAmount = 0;
+
+            if ($paymentMethod === 'credit') {
+                $dueAmount = $totalAmount;
+                $amountReceived = 0;
+                $changeAmount = 0;
+            } else {
+                $changeAmount = max(0, $amountReceived - $totalAmount);
+            }
 
             $sale = Sale::create([
                 'invoice_number' => Sale::generateInvoiceNumber(),
                 'user_id' => $cashier->id,
+                'customer_id' => $customerId,
                 'subtotal' => $subtotal,
                 'discount_amount' => $discountAmount,
                 'tax_amount' => $taxAmount,
                 'total_amount' => $totalAmount,
                 'amount_received' => $amountReceived,
-                'change_amount' => max(0, $amountReceived - $totalAmount),
-                'payment_method' => $saleData['payment_method'] ?? 'cash',
+                'change_amount' => $changeAmount,
+                'due_amount' => $dueAmount,
+                'payment_method' => $paymentMethod,
                 'status' => 'completed',
                 'notes' => $saleData['notes'] ?? null,
             ]);
@@ -69,7 +86,24 @@ class SaleService
                 $sale->items()->create($itemData);
             }
 
-            return $sale->load('items.product', 'items.batch');
+            if ($dueAmount > 0 && $customerId) {
+                $customer = Customer::lockForUpdate()->find($customerId);
+                $newBalance = $customer->balance + $dueAmount;
+
+                CustomerPayment::create([
+                    'customer_id' => $customerId,
+                    'sale_id' => $sale->id,
+                    'type' => 'sale_credit',
+                    'amount' => $dueAmount,
+                    'running_balance' => $newBalance,
+                    'description' => 'Credit sale ' . $sale->invoice_number,
+                    'recorded_by' => $cashier->id,
+                ]);
+
+                $customer->update(['balance' => $newBalance]);
+            }
+
+            return $sale->load('items.product', 'items.batch', 'customer');
         });
     }
 

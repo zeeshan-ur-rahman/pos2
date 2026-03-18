@@ -64,6 +64,7 @@ export default function Receipt({ sale }) {
                                 hour: '2-digit', minute: '2-digit'
                             })}</p>
                             <p>Cashier: {sale.user.name}</p>
+                            {sale.customer && <p>Customer: <span className="font-semibold text-gray-700">{sale.customer.name}</span></p>}
                         </div>
                     </div>
 
@@ -125,6 +126,12 @@ export default function Receipt({ sale }) {
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-500">Change</span>
                                 <span className="text-gray-700">Rs {parseFloat(sale.change_amount).toFixed(2)}</span>
+                            </div>
+                        )}
+                        {parseFloat(sale.due_amount) > 0 && (
+                            <div className="flex justify-between text-sm font-semibold text-red-600 border-t border-red-200 pt-1.5 mt-1.5">
+                                <span>Amount Due</span>
+                                <span>Rs {parseFloat(sale.due_amount).toFixed(2)}</span>
                             </div>
                         )}
                     </div>
