@@ -30,6 +30,24 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('pos.terminal')}
+                                    active={route().current('pos.terminal')}
+                                >
+                                    POS
+                                </NavLink>
+                                <NavLink
+                                    href="/products"
+                                    active={window.location.pathname.startsWith('/products')}
+                                >
+                                    Products
+                                </NavLink>
+                                <NavLink
+                                    href={route('pos.history')}
+                                    active={route().current('pos.history') || route().current('pos.show')}
+                                >
+                                    Sales
+                                </NavLink>
                             </div>
                         </div>
 
@@ -133,6 +151,24 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('pos.terminal')}
+                            active={route().current('pos.terminal')}
+                        >
+                            POS
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href="/products"
+                            active={window.location.pathname.startsWith('/products')}
+                        >
+                            Products
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('pos.history')}
+                            active={route().current('pos.history') || route().current('pos.show')}
+                        >
+                            Sales
                         </ResponsiveNavLink>
                     </div>
 

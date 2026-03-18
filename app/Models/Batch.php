@@ -15,8 +15,17 @@ class Batch extends Model
         'stock_quantity'
     ];
 
+    protected $casts = [
+        'expiry_date' => 'date',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
     }
 }

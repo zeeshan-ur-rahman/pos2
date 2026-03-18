@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/laravel/pos/app/Models -type f -name \"*.php\" 2>/dev/null | head -20)"
+      "Bash(find /c/laravel/pos/app/Models -type f -name \"*.php\" 2>/dev/null | head -20)",
+      "Bash(cd:*)",
+      "Bash(find:*)"
     ]
   }
 }
